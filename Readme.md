@@ -30,9 +30,8 @@ Team_Project/
     │   │   └── 하나카드_*.json       # 각 상담별 원본 파일 (예: 하나카드_1.json)
     │   ├── Classify/                 # 분류 결과 JSON 파일 저장 폴더
     │   │   └── 01_분류_*.json        # 분류 결과 파일 (예: 01_분류_200001_1.json)
-    │   ├── Summary/                  # 상담 요약 JSON 파일 저장 폴더
-    │   │   └── summary_*.json        # 상담 요약 파일 (예: summary_200001.json)
-    │   └── (기타 데이터 파일)
+    │   └── Summary/                  # 상담 요약 JSON 파일 저장 폴더
+    │       └── summary_*.json        # 상담 요약 파일 (예: summary_200001.json)
     │
     ├── requirements.txt              # 프로젝트 의존성 명시 파일
     └── Readme.md                     # 프로젝트 설명서 (본 파일)
