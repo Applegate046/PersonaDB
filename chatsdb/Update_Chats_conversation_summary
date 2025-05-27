@@ -1,0 +1,108 @@
+import os
+import json
+import sqlite3
+import random
+from datetime import datetime, timedelta
+
+def delete_all_summaries(chats_db_path):
+    conn = sqlite3.connect(chats_db_path)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM conversation_summary")
+    conn.commit()
+    conn.close()
+    print("[RESET] conversation_summary cleared")
+
+def get_phone_by_source_id(conn, source_id):
+    cursor = conn.cursor()
+    cursor.execute("SELECT phone FROM clients WHERE source_id = ?", (source_id,))
+    row = cursor.fetchone()
+    return row[0] if row else None
+
+def parse_summary_json(json_path):
+    with open(json_path, encoding='utf-8') as f:
+        data = json.load(f)
+    if isinstance(data, list):
+        data = data[0]
+    output_text = (
+        data.get("instructions", [{}])[0]
+            .get("data", [{}])[0]
+            .get("output", "")
+            .strip()
+    )
+    paragraphs = [p.strip() for p in output_text.split(". ") if p.strip()]
+    cumulative = []
+    current = ""
+    for para in paragraphs:
+        if current:
+            current += ". " + para
+        else:
+            current = para
+        cumulative.append(current + ".")
+    return cumulative
+
+def random_datetime_2024():
+    return datetime(
+        year=2024,
+        month=random.randint(1, 12),
+        day=random.randint(1, 28),
+        hour=random.randint(0, 23),
+        minute=random.randint(0, 59),
+        second=random.randint(0, 59)
+    )
+
+def insert_summary(chats_db_path, source_id, phone, summaries):
+    conn = sqlite3.connect(chats_db_path)
+    cursor = conn.cursor()
+
+    base_time = random_datetime_2024()
+
+    for version, summary in enumerate(summaries, start=1):
+        if version == 1:
+            updated_at_dt = base_time
+        else:
+            delta_seconds = random.randint(10, 60)
+            updated_at_dt += timedelta(seconds=delta_seconds)
+        updated_at = updated_at_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        cursor.execute(
+            "INSERT INTO conversation_summary (source_id, phone, version, summary, updated_at) VALUES (?, ?, ?, ?, ?)",
+            (source_id, phone, version, summary, updated_at)
+        )
+
+    conn.commit()
+    conn.close()
+
+if __name__ == "__main__":
+    clients_db_path = "./clientsdb/clients.db"
+    chats_db_path = "./chatsdb/chats.db"
+    summary_dir = "./Data/Summary"
+
+    # 먼저 테이블 비우기
+    delete_all_summaries(chats_db_path)
+
+    conn_clients = sqlite3.connect(clients_db_path)
+
+    for filename in os.listdir(summary_dir):
+        if not filename.startswith("02_요약_") or not filename.endswith("_1.json"):
+            continue
+
+        try:
+            source_id = int(filename.split("_")[2])
+        except Exception:
+            print(f"[SKIP] 잘못된 파일명 형식: {filename}")
+            continue
+
+        phone = get_phone_by_source_id(conn_clients, source_id)
+        if not phone:
+            print(f"[SKIP] source_id={source_id} 는 clients.db에 없음")
+            continue
+
+        json_path = os.path.join(summary_dir, filename)
+        try:
+            summaries = parse_summary_json(json_path)
+            insert_summary(chats_db_path, source_id, phone, summaries)
+            print(f"[OK] source_id={source_id}: {len(summaries)} summaries inserted.")
+        except Exception as e:
+            print(f"[ERROR] {filename} 처리 실패: {e}")
+
+    conn_clients.close()

@@ -1,0 +1,12 @@
+# Python 표준 라이브러리만 사용하지만, 아래는 확장성 및 환경 통일을 위해 작성
+python>=3.8
+
+# 실제 코드에서 사용되는 외부 패키지는 없음
+# (sqlite3, json, os, random, re, glob, datetime 등은 모두 표준 라이브러리)
+
+# 만약 Jupyter Notebook 등에서 테스트할 경우 필요
+# jupyter
+
+# 추가적으로 데이터 분석/시각화가 필요하다면 아래 패키지 사용 가능
+# pandas
+# numpy
